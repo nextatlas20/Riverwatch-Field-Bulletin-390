@@ -1,0 +1,34 @@
+name: Publish RW-390 bulletin
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Publish RW-390 files
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp .github/scripts/rw390_publish.py /tmp/rw390_publish.py
+          git config user.name "RW-390 Publisher"
+          git config user.email "actions@github.com"
+          git remote add upstream https://github.com/academicpages/academicpages.github.io.git 2>/dev/null || git remote set-url upstream https://github.com/academicpages/academicpages.github.io.git
+          git fetch --depth=1 upstream master
+          git checkout -B master FETCH_HEAD
+          python3 /tmp/rw390_publish.py
+          git add -A
+          git commit -q -m "Publish RW-390 watershed field bulletin"
+          git push --force origin master
+          for b in fix-teaching read-more '#137'; do
+            git push origin --delete "$b" || true
+          done
